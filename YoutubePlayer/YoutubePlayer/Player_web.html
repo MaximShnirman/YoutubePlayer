@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+            <style>
+                body { margin: 0; width:100%; height:100%; background-color:#000000; }
+                html { width:100%; height:100%; background-color:#000000; }
+                iframe#playerId,
+                object,
+                video, 
+                embed {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100% !important;
+                    height: 100% !important;
+                }
+            </style>
+            </head>
+    <body>
+        <div id="playerId"></div>
+        
+        <script>
+            var tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            var firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            
+            var errorCode = -1;
+            var ytPlayer;
+            function onYouTubeIframeAPIReady() {
+                ytPlayer = new YT.Player('playerId', {
+                    "videoId": 'SgiY6CL6YC4',
+                    "playerVars": {
+                        "enablejsapi": 1,
+                        "autoplay": 0,
+                        "fs": 0,
+                        "controls": 2,
+                        "playsinline": 1,
+                        "modestbranding": 1
+                    },
+                    "events": {
+                        "onReady" : "onPlayerReady",
+                        "onStateChange" : "onPlayerStateChange",
+                        "onError" : "onPlayerError"
+                    },
+                    "width": "100%",
+                    "height": "100%"
+                });
+                ytPlayer.setSize(window.innerWidth, window.innerHeight);
+                window.webkit.messageHandlers.native_bridge.postMessage("onYouTubeIframeAPIReady called");
+            }
+        function onPlayerReady(event) {
+            window.webkit.messageHandlers.native_bridge.postMessage('player://state=6');
+            window.location.href = 'player://onPlayerReady?data=' + event.data;
+        }
+        function onPlayerStateChange(event) {
+            window.webkit.messageHandlers.native_bridge.postMessage('player://state=' + event.data);
+            window.location.href = 'player://onPlayerStateChange?data=' + event.data + "&errorCode=" + errorCode;
+        }
+        function onPlayerError(event) {
+            window.webkit.messageHandlers.native_bridge.postMessage('player://errorCode=' + event.data);
+            window.location.href = 'player://onPlayerError?error=' + event.data;
+            errorCode = event.data;
+        }
+        </script>
+    </body>
+</html>
