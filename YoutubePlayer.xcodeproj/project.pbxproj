@@ -7,17 +7,23 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D390ED362677776500C3B50B /* vimeo.html in Resources */ = {isa = PBXBuildFile; fileRef = D390ED352677776500C3B50B /* vimeo.html */; };
+		D390ED3A2677858800C3B50B /* VimeoPlayerView.m in Sources */ = {isa = PBXBuildFile; fileRef = D390ED392677858800C3B50B /* VimeoPlayerView.m */; };
 		D3FA9B8B2535FC82000B9470 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D3FA9B8A2535FC82000B9470 /* AppDelegate.m */; };
 		D3FA9B912535FC82000B9470 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D3FA9B902535FC82000B9470 /* ViewController.m */; };
 		D3FA9B942535FC82000B9470 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D3FA9B922535FC82000B9470 /* Main.storyboard */; };
 		D3FA9B962535FC83000B9470 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D3FA9B952535FC83000B9470 /* Assets.xcassets */; };
 		D3FA9B992535FC83000B9470 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D3FA9B972535FC83000B9470 /* LaunchScreen.storyboard */; };
 		D3FA9B9C2535FC83000B9470 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D3FA9B9B2535FC83000B9470 /* main.m */; };
-		D3FA9BA52535FD0B000B9470 /* PlayerView.m in Sources */ = {isa = PBXBuildFile; fileRef = D3FA9BA22535FD0B000B9470 /* PlayerView.m */; };
-		D3FA9BA62535FD0B000B9470 /* Player.html in Resources */ = {isa = PBXBuildFile; fileRef = D3FA9BA32535FD0B000B9470 /* Player.html */; };
+		D3FA9BA52535FD0B000B9470 /* YoutubePlayerView.m in Sources */ = {isa = PBXBuildFile; fileRef = D3FA9BA22535FD0B000B9470 /* YoutubePlayerView.m */; };
+		D3FA9BA62535FD0B000B9470 /* youtube.html in Resources */ = {isa = PBXBuildFile; fileRef = D3FA9BA32535FD0B000B9470 /* youtube.html */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		D390ED352677776500C3B50B /* vimeo.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = vimeo.html; sourceTree = "<group>"; };
+		D390ED382677858800C3B50B /* VimeoPlayerView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VimeoPlayerView.h; sourceTree = "<group>"; };
+		D390ED392677858800C3B50B /* VimeoPlayerView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VimeoPlayerView.m; sourceTree = "<group>"; };
+		D390ED402678954800C3B50B /* VideoProtocol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VideoProtocol.h; sourceTree = "<group>"; };
 		D3FA9B862535FC82000B9470 /* YoutubePlayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YoutubePlayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D3FA9B892535FC82000B9470 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		D3FA9B8A2535FC82000B9470 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -28,9 +34,9 @@
 		D3FA9B982535FC83000B9470 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		D3FA9B9A2535FC83000B9470 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D3FA9B9B2535FC83000B9470 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		D3FA9BA22535FD0B000B9470 /* PlayerView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PlayerView.m; sourceTree = "<group>"; };
-		D3FA9BA32535FD0B000B9470 /* Player.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = Player.html; sourceTree = "<group>"; };
-		D3FA9BA42535FD0B000B9470 /* PlayerView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PlayerView.h; sourceTree = "<group>"; };
+		D3FA9BA22535FD0B000B9470 /* YoutubePlayerView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = YoutubePlayerView.m; sourceTree = "<group>"; };
+		D3FA9BA32535FD0B000B9470 /* youtube.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = youtube.html; sourceTree = "<group>"; };
+		D3FA9BA42535FD0B000B9470 /* YoutubePlayerView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = YoutubePlayerView.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,9 +86,13 @@
 		D3FA9BA725360061000B9470 /* YoutubePlayer */ = {
 			isa = PBXGroup;
 			children = (
-				D3FA9BA32535FD0B000B9470 /* Player.html */,
-				D3FA9BA42535FD0B000B9470 /* PlayerView.h */,
-				D3FA9BA22535FD0B000B9470 /* PlayerView.m */,
+				D390ED402678954800C3B50B /* VideoProtocol.h */,
+				D3FA9BA32535FD0B000B9470 /* youtube.html */,
+				D3FA9BA42535FD0B000B9470 /* YoutubePlayerView.h */,
+				D3FA9BA22535FD0B000B9470 /* YoutubePlayerView.m */,
+				D390ED352677776500C3B50B /* vimeo.html */,
+				D390ED382677858800C3B50B /* VimeoPlayerView.h */,
+				D390ED392677858800C3B50B /* VimeoPlayerView.m */,
 			);
 			path = YoutubePlayer;
 			sourceTree = "<group>";
@@ -147,7 +157,8 @@
 				D3FA9B992535FC83000B9470 /* LaunchScreen.storyboard in Resources */,
 				D3FA9B962535FC83000B9470 /* Assets.xcassets in Resources */,
 				D3FA9B942535FC82000B9470 /* Main.storyboard in Resources */,
-				D3FA9BA62535FD0B000B9470 /* Player.html in Resources */,
+				D390ED362677776500C3B50B /* vimeo.html in Resources */,
+				D3FA9BA62535FD0B000B9470 /* youtube.html in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -159,9 +170,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				D3FA9B912535FC82000B9470 /* ViewController.m in Sources */,
+				D390ED3A2677858800C3B50B /* VimeoPlayerView.m in Sources */,
 				D3FA9B8B2535FC82000B9470 /* AppDelegate.m in Sources */,
 				D3FA9B9C2535FC83000B9470 /* main.m in Sources */,
-				D3FA9BA52535FD0B000B9470 /* PlayerView.m in Sources */,
+				D3FA9BA52535FD0B000B9470 /* YoutubePlayerView.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

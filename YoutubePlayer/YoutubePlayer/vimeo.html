@@ -1,0 +1,31 @@
+<html>
+    <body>
+        <div id="player" allowfullscreen></div>
+        
+        <script src="https://player.vimeo.com/api/player.js"></script>
+        <script>
+            var options = %@;
+            
+            var player = new Vimeo.Player('player', options);
+            
+            player.on('play', function() {
+                window.location.href = 'player://onPlay';
+            });
+        player.on('ready', function() {
+            window.location.href = 'player://ready';
+        });
+        player.on('pause', function() {
+            window.location.href = 'player://pause';
+        });
+        player.on('requestFullscreen', function() {
+            window.location.href = 'player://requestFullscreen';
+        });
+        player.on('exitFullscreen', function() {
+            window.location.href = 'player://exitFullscreen';
+        });
+        player.on('getFullscreen', function() {
+            window.location.href = 'player://getFullscreen';
+        });
+        </script>
+    </body>
+</html>

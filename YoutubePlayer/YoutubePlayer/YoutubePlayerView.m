@@ -1,12 +1,12 @@
 //
-//  PlayerView.m
+//  YoutubePlayerView.m
 //  YoutubePlayer
 //
 //  Created by Maxim Shnirman on 13/10/2020.
 //  Copyright © 2020 Maxim Shnirman. All rights reserved.
 //
 
-#import "PlayerView.h"
+#import "YoutubePlayerView.h"
 #import <WebKit/WebKit.h>
 
 static BOOL kAutoPlay = YES;
@@ -20,7 +20,7 @@ static NSString *const kWidth = @"width";
 static NSString *const kHeight = @"height";
 static NSString *const kTime = @"time";
 
-static NSString *const kPlayerStateUnstartedCode = @"-1";
+static NSString *const kPlayerStateNotStartedCode = @"-1";
 static NSString *const kPlayerStateEndedCode = @"0";
 static NSString *const kPlayerStatePlayingCode = @"1";
 static NSString *const kPlayerStatePausedCode = @"2";
@@ -47,18 +47,18 @@ static NSString *const kPlayerOnError = @"onPlayerError";
 static NSString *const kPlayerResize = @"onPlayerResize";
 static NSString *const kPlayTime = @"onPlayTime";
 
-@interface PlayerView () <WKNavigationDelegate>
+@interface YoutubePlayerView () <WKNavigationDelegate>
 @property (nonatomic, strong) WKWebView *webView;
 @property (nonatomic, strong) NSURL *origin;
 @property (nonatomic, strong) UIActivityIndicatorView *spinner;
-@property (nonatomic, weak) id<PlayerStateProtocol> stateDelegate;
-@property (nonatomic, weak) id<PlayerErrorProtocol> errorDelegate;
+@property (nonatomic, weak) id<VideoPlayerStateProtocol> stateDelegate;
+@property (nonatomic, weak) id<VideoPlayerErrorProtocol> errorDelegate;
 @end
 
-@implementation PlayerView
+@implementation YoutubePlayerView
 
 typedef NS_ENUM(NSInteger, YTPlayerState) {
-    PlayerStateUnstarted = -1,
+    PlayerStateNotStarted = -1,
     PlayerStateEnded,
     PlayerStatePlaying,
     PlayerStatePaused,
@@ -103,17 +103,17 @@ typedef NS_ENUM(NSInteger, YTPlayerError) {
 }
 
 #pragma mark - public
-- (void)setStateDelegate:(id<PlayerStateProtocol>)delegate {
+- (void)setStateDelegate:(id<VideoPlayerStateProtocol>)delegate {
     _stateDelegate = delegate;
 }
 
-- (void)setErrorDelegate:(id<PlayerErrorProtocol>)delegate {
+- (void)setErrorDelegate:(id<VideoPlayerErrorProtocol>)delegate {
     _errorDelegate = delegate;
 }
 
-- (void)loadYoutubeIframeWithId:(NSString *)youtubeId {
+- (void)loadVideoWithId:(NSString *)videoId {
     NSString *player = [self player];
-    NSString *playerParams = [self playerParamStr:youtubeId];
+    NSString *playerParams = [self playerParamWithVideoId:videoId];
     
     if (player && playerParams) {
         NSString *embedHTML = [NSString stringWithFormat:player, playerParams, @(kAutoPlay)];
@@ -144,7 +144,7 @@ typedef NS_ENUM(NSInteger, YTPlayerError) {
 }
 
 - (NSString *_Nullable)player {
-    NSString *html = [[NSBundle mainBundle] pathForResource:@"Player" ofType:@"html"];
+    NSString *html = [[NSBundle mainBundle] pathForResource:@"youtube" ofType:@"html"];
     NSError *jsonRenderingError = nil;
     NSString *player = [NSString stringWithContentsOfFile:html encoding:NSUTF8StringEncoding error:&jsonRenderingError];
     
@@ -156,7 +156,7 @@ typedef NS_ENUM(NSInteger, YTPlayerError) {
     return player;
 }
 
-- (NSString *_Nullable)playerParamStr:(NSString *)youtubeId {
+- (NSString *_Nullable)playerParamWithVideoId:(NSString *)youtubeId {
     NSError *jsonRenderingError = nil;
     NSDictionary *playerParams = [self playerParams:youtubeId];
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:playerParams options:NSJSONWritingPrettyPrinted error:&jsonRenderingError];
@@ -173,13 +173,13 @@ typedef NS_ENUM(NSInteger, YTPlayerError) {
     return @{
         @"videoId": youtubeId,
         @"playerVars": @{
-                @"enablejsapi": @0,
-                @"autoplay": @0,
-                @"fs": @1,
-                @"rel": @0,
-                @"controls": @1,
-                @"playsinline": @1,
-                @"modestbranding": @1
+                @"enablejsapi": @(false),
+                @"autoplay": @(false),
+                @"fs": @(true),
+                @"rel": @(false),
+                @"controls": @(true),
+                @"playsinline": @(true),
+                @"modestbranding": @(true)
         },
         @"events": @{
                 @"onReady" : kPlayerOnReady,
@@ -233,6 +233,165 @@ typedef NS_ENUM(NSInteger, YTPlayerError) {
 - (void)removeSpinner {
     [self.spinner stopAnimating];
     [self.spinner removeFromSuperview];
+}
+
+#pragma mark - selector invocator
+- (void)invocator:(SEL)selector {
+    if (self.stateDelegate && [self.stateDelegate respondsToSelector:selector]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        [self.stateDelegate performSelector:selector withObject:self];
+#pragma clang diagnostic pop
+    }
+}
+
+- (void)errorInvocator:(SEL)selector error:(NSError *)error {
+    if (self.errorDelegate && [self.errorDelegate respondsToSelector:selector]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        [self.errorDelegate performSelector:selector withObject:self withObject:error];
+#pragma clang diagnostic pop
+    }
+}
+
+#pragma mark - state handler
+- (void)handleState:(YTPlayerState)state {
+    SEL selector = nil;
+    
+    switch (state) {
+        case PlayerStateNotStarted:
+            selector = @selector(playerNotStarted:);
+            break;
+        case PlayerStateEnded:
+            selector = @selector(playerEnded:);
+            break;
+        case PlayerStatePlaying:
+            selector = @selector(playerPlaying:);
+            break;
+        case PlayerStatePaused:
+            selector = @selector(playerPaused:);
+            break;
+        case PlayerStateBuffering:
+            selector = @selector(playerBuffering:);
+            break;
+        case PlayerStateCued:
+            selector = @selector(playerCued:);
+            break;
+        case PlayerStateUnknown:
+            selector = @selector(player:errorUnknown:);
+            NSError *error = [NSError errorWithDomain:kErrorDomain code:PlayerStateUnknown userInfo:@{kData: @"unknown error in state"}];
+            [self errorInvocator:selector error:error];
+            return;
+    }
+    
+    if (selector) {
+        [self invocator:selector];
+    }
+}
+
+- (YTPlayerState)playerStateForString:(NSString *)stateString {
+    YTPlayerState state = PlayerStateUnknown;
+    
+    if ([stateString isEqualToString:kPlayerStateNotStartedCode]) {
+        state = PlayerStateNotStarted;
+    } else if ([stateString isEqualToString:kPlayerStateEndedCode]) {
+        state = PlayerStateEnded;
+    } else if ([stateString isEqualToString:kPlayerStatePlayingCode]) {
+        state = PlayerStatePlaying;
+    } else if ([stateString isEqualToString:kPlayerStatePausedCode]) {
+        state = PlayerStatePaused;
+    } else if ([stateString isEqualToString:kPlayerStateBufferingCode]) {
+        state = PlayerStateBuffering;
+    } else if ([stateString isEqualToString:kPlayerStateCuedCode]) {
+        state = PlayerStateCued;
+    }
+    
+    return state;
+}
+
+#pragma mark - error handler
+- (void)handleError:(YTPlayerError)errorNum {
+    SEL selector = nil;
+    NSError *error = nil;
+    
+    switch (errorNum) {
+        case PlayerErrorInvalidParam:
+            selector = @selector(player:errorInvalidParam:);
+            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorInvalidParam userInfo:@{kData: @"invalid param"}];
+            break;
+        case PlayerErrorHTML5:
+            selector = @selector(player:errorHTML5:);
+            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorHTML5 userInfo:@{kData: @"HTML5 error"}];
+            break;
+        case PlayerErrorVideoNotFound:
+            selector = @selector(player:errorNotFound:);
+            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorVideoNotFound userInfo:@{kData: @"video not found"}];
+            break;
+        case PlayerErrorNotEmbeddable:
+            selector = @selector(player:errorNotEmbeddable:);
+            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorNotEmbeddable userInfo:@{kData: @"video not embeddable"}];
+            break;
+        case PlayerErrorCannotFindVideo:
+            selector = @selector(player:errorNotFound:);
+            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorCannotFindVideo userInfo:@{kData: @"video not found"}];
+            break;
+        case PlayerErrorSameAsNotEmbeddable:
+            selector = @selector(player:errorNotEmbeddable:);
+            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorSameAsNotEmbeddable userInfo:@{kData: @"video not embeddable"}];
+            break;
+        default:
+            selector = @selector(player:errorUnknown:);
+            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorUnknown userInfo:@{kData: @"unknown error"}];
+            break;
+    }
+    
+    if (selector && error) {
+        [self errorInvocator:selector error:error];
+    }
+}
+
+- (YTPlayerError)playerErrorForString:(NSString *)data {
+    YTPlayerError error = PlayerErrorUnknown;
+    
+    if ([data isEqual:kPlayerErrorInvalidParamErrorCode]) {
+        error = PlayerErrorInvalidParam;
+    } else if ([data isEqual:kPlayerErrorHTML5ErrorCode]) {
+        error = PlayerErrorHTML5;
+    } else if ([data isEqual:kPlayerErrorNotEmbeddableErrorCode] ||
+               [data isEqual:kPlayerErrorSameAsNotEmbeddableErrorCode]) {
+        error = PlayerErrorNotEmbeddable;
+    } else if ([data isEqual:kPlayerErrorVideoNotFoundErrorCode] ||
+               [data isEqual:kPlayerErrorCannotFindVideoErrorCode]) {
+        error = PlayerErrorVideoNotFound;
+    }
+    
+    return error;
+}
+
+#pragma mark - WKNavigationDelegate
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    if (webView != self.webView) {
+        return;
+    }
+    
+    NSURL *url = navigationAction.request.URL;
+    if ([[url scheme] isEqualToString:kScheme]) {
+        
+        if ([self handleHTTPNavigationToUrl:url]) {
+            decisionHandler(WKNavigationActionPolicyAllow);
+        } else {
+            decisionHandler(WKNavigationActionPolicyCancel);
+        }
+        return;
+    }
+    
+    if ([[url scheme] isEqualToString:kPlayerScheme]) {
+        [self handlePlayer:url];
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
+    
+    decisionHandler(WKNavigationActionPolicyCancel);
 }
 
 - (void)handlePlayer:(NSURL *)url {
@@ -324,162 +483,6 @@ typedef NS_ENUM(NSInteger, YTPlayerError) {
     
     NSTextCheckingResult *result = [ex firstMatchInString:input options:0 range:NSMakeRange(0, length)];
     return result;
-}
-
-- (void)invocator:(SEL)selector {
-    if (self.stateDelegate && [self.stateDelegate respondsToSelector:selector]) {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        [self.stateDelegate performSelector:selector withObject:self];
-#pragma clang diagnostic pop
-    }
-}
-
-- (void)errorInvocator:(SEL)selector error:(NSError *)error {
-    if (self.errorDelegate && [self.errorDelegate respondsToSelector:selector]) {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        [self.errorDelegate performSelector:selector withObject:self withObject:error];
-#pragma clang diagnostic pop
-    }
-}
-
-- (YTPlayerState)playerStateForString:(NSString *)stateString {
-    YTPlayerState state = PlayerStateUnknown;
-    
-    if ([stateString isEqualToString:kPlayerStateUnstartedCode]) {
-        state = PlayerStateUnstarted;
-    } else if ([stateString isEqualToString:kPlayerStateEndedCode]) {
-        state = PlayerStateEnded;
-    } else if ([stateString isEqualToString:kPlayerStatePlayingCode]) {
-        state = PlayerStatePlaying;
-    } else if ([stateString isEqualToString:kPlayerStatePausedCode]) {
-        state = PlayerStatePaused;
-    } else if ([stateString isEqualToString:kPlayerStateBufferingCode]) {
-        state = PlayerStateBuffering;
-    } else if ([stateString isEqualToString:kPlayerStateCuedCode]) {
-        state = PlayerStateCued;
-    }
-    
-    return state;
-}
-
-- (YTPlayerError)playerErrorForString:(NSString *)data {
-    YTPlayerError error = PlayerErrorUnknown;
-    
-    if ([data isEqual:kPlayerErrorInvalidParamErrorCode]) {
-        error = PlayerErrorInvalidParam;
-    } else if ([data isEqual:kPlayerErrorHTML5ErrorCode]) {
-        error = PlayerErrorHTML5;
-    } else if ([data isEqual:kPlayerErrorNotEmbeddableErrorCode] ||
-               [data isEqual:kPlayerErrorSameAsNotEmbeddableErrorCode]) {
-        error = PlayerErrorNotEmbeddable;
-    } else if ([data isEqual:kPlayerErrorVideoNotFoundErrorCode] ||
-               [data isEqual:kPlayerErrorCannotFindVideoErrorCode]) {
-        error = PlayerErrorVideoNotFound;
-    }
-    
-    return error;
-}
-
-- (void)handleState:(YTPlayerState)state {
-    SEL selector = nil;
-    
-    switch (state) {
-        case PlayerStateUnstarted:
-            selector = @selector(playerUnstarted:);
-            break;
-        case PlayerStateEnded:
-            selector = @selector(playerEnded:);
-            break;
-        case PlayerStatePlaying:
-            selector = @selector(playerPlaying:);
-            break;
-        case PlayerStatePaused:
-            selector = @selector(playerPaused:);
-            break;
-        case PlayerStateBuffering:
-            selector = @selector(playerBuffering:);
-            break;
-        case PlayerStateCued:
-            selector = @selector(playerCued:);
-            break;
-        case PlayerStateUnknown:
-            selector = @selector(player:errorUnknown:);
-            NSError *error = [NSError errorWithDomain:kErrorDomain code:PlayerStateUnknown userInfo:@{kData: @"unknown error in state"}];
-            [self errorInvocator:selector error:error];
-            return;
-    }
-    
-    if (selector) {
-        [self invocator:selector];
-    }
-}
-
-- (void)handleError:(YTPlayerError)errorNum {
-    SEL selector = nil;
-    NSError *error = nil;
-    
-    switch (errorNum) {
-        case PlayerErrorInvalidParam:
-            selector = @selector(player:errorInvalidParam:);
-            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorInvalidParam userInfo:@{kData: @"invalid param"}];
-            break;
-        case PlayerErrorHTML5:
-            selector = @selector(player:errorHTML5:);
-            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorHTML5 userInfo:@{kData: @"HTML5 error"}];
-            break;
-        case PlayerErrorVideoNotFound:
-            selector = @selector(player:errorNotFound:);
-            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorVideoNotFound userInfo:@{kData: @"video not found"}];
-            break;
-        case PlayerErrorNotEmbeddable:
-            selector = @selector(player:errorNotEmbeddable:);
-            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorNotEmbeddable userInfo:@{kData: @"video not embeddable"}];
-            break;
-        case PlayerErrorCannotFindVideo:
-            selector = @selector(player:errorNotFound:);
-            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorCannotFindVideo userInfo:@{kData: @"video not found"}];
-            break;
-        case PlayerErrorSameAsNotEmbeddable:
-            selector = @selector(player:errorNotEmbeddable:);
-            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorSameAsNotEmbeddable userInfo:@{kData: @"video not embeddable"}];
-            break;
-        default:
-            selector = @selector(player:errorUnknown:);
-            error = [NSError errorWithDomain:kErrorDomain code:PlayerErrorUnknown userInfo:@{kData: @"unknown error"}];
-            break;
-    }
-    
-    if (selector && error) {
-        [self errorInvocator:selector error:error];
-    }
-}
-
-#pragma mark - WKNavigationDelegate
-- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
-    if (webView != self.webView) {
-        return;
-    }
-    
-    NSURL *url = navigationAction.request.URL;
-    if ([[url scheme] isEqualToString:kScheme]) {
-        
-        if ([self handleHTTPNavigationToUrl:url]) {
-            decisionHandler(WKNavigationActionPolicyAllow);
-        } else {
-            decisionHandler(WKNavigationActionPolicyCancel);
-        }
-        return;
-    }
-    
-    if ([[url scheme] isEqualToString:kPlayerScheme]) {
-        [self handlePlayer:url];
-        decisionHandler(WKNavigationActionPolicyCancel);
-        return;
-    }
-    
-    decisionHandler(WKNavigationActionPolicyCancel);
 }
 
 @end
